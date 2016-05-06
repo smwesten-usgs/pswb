@@ -1,12 +1,28 @@
 #!/bin/sh
 
+
+die() {
+  echo >&2 "$@"
+  exit 1
+}
+
+[ "$#" -eq 12 ] || die "$BASH_SOURCE requires 12 arguments"
+
 OUTPUT_NLCD_NAME=$1
 OUTPUT_AWC_NAME=$2
 OUTPUT_SOILS_NAME=$3
 OUTPUT_D8_FLOWDIR_NAME=$4
 OUTPUT_SWB_CTL_NAME=$5
+LLX=$6
+LLY=$7
+NX=$8
+NY=$9
+RES=${10}
+START_DATE=${11}
+END_DATE=${12}
 
-echo """BASE_PROJECTION_DEFINITION +proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23.0 +lon_0=-96.0 +x_0=0.0 +y_0=0.0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs
+echo """GRID $NX $NY $LLX $LLY $RES
+BASE_PROJECTION_DEFINITION +proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23.0 +lon_0=-96.0 +x_0=0.0 +y_0=0.0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs
 
 ## DEFINE METHODS TO BE USED ##
 
@@ -62,6 +78,8 @@ AVAILABLE_WATER_CONTENT_PROJECTION_DEFINITION +proj=aea +lat_1=29.5 +lat_2=45.5 
 LAND_USE ARC_GRID $OUTPUT_NLCD_NAME
 LAND_USE_PROJECTION_DEFINITION +proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23.0 +lon_0=-96.0 +x_0=0.0 +y_0=0.0 +ellps=GRS80 +datum=NAD83 +units=m +no_defs
 
-LAND_USE_LOOKUP_TABLE /home/nobody/Project_Data/GLASS/swb_input/LU_LOOKUP_NLCD__SWB2.txt
+LAND_USE_LOOKUP_TABLE /home/nobody/Project_Data/GLASS/swb_input/LU_LOOKUP_NLCD_QA_SM__SWB2.txt
 
-""" >> $OUTPUT_SWB_CTL_NAME
+START_DATE $START_DATE
+END_DATE $END_DATE
+""" > "$OUTPUT_SWB_CTL_NAME"
