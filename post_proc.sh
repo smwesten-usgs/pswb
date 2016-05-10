@@ -9,6 +9,6 @@ do
   tar -xvf $file
 done
 
-ncfiles=$( ls potential_recharge_annual_*.nc )
+ncfiles=$( ls *potential_recharge_1980_1980_*.nc )
 
 swb_merge $ncfiles

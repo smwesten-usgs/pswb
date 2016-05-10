@@ -2,7 +2,7 @@
 
 RESOLUTION=75
 START_DATE="01/01/1980"
-END_DATE="12/31/2010"
+END_DATE="12/30/1980"
 HUC8="10280102"
 
 die() {
@@ -50,20 +50,19 @@ OUTPUT_SWB_CTL_NAME="recharge_""$RESOLUTION""m_huc10_""$huc10.ctl"
 swb_file=$(./create_rasters_huc10.sh $huc10 $RESOLUTION $START_DATE $END_DATE )
 wait
 
-./swb2 "$OUTPUT_SWB_CTL_NAME"
+./swb2 "$OUTPUT_SWB_CTL_NAME" "--output_prefix=huc$huc10"
 
-./cdo yearsum $(ls rainfall*.*) rainfall_annual_$proc_num.nc
-./cdo yearsum $(ls fog*.*) fog_annual_$proc_num.nc
-./cdo yearsum $(ls potential_recharge*.*) potential_recharge_annual_$proc_num.nc
-./cdo yearsum $(ls interception*.*) interception_annual_$proc_num.nc
-./cdo yearsum $(ls irrigation*.*) irrigation_annual_$proc_num.nc
-./cdo yearsum $(ls runoff*.*) runoff_annual_$proc_num.nc
-./cdo yearsum $(ls actual_ET*.*) actual_et_annual_$proc_num.nc
+./cdo yearsum $(ls *rainfall*.*) huc$huc10_rainfall_annual_$proc_num.nc
+./cdo yearsum $(ls *fog*.*) huc$huc10_fog_annual_$proc_num.nc
+./cdo yearsum $(ls *potential_recharge*.*) huc$huc10_potential_recharge_annual_$proc_num.nc
+./cdo yearsum $(ls *interception*.*) huc$huc10_interception_annual_$proc_num.nc
+./cdo yearsum $(ls *irrigation*.*) huc$huc10_irrigation_annual_$proc_num.nc
+./cdo yearsum $(ls *runoff*.*) huc$huc10_runoff_annual_$proc_num.nc
+./cdo yearsum $(ls *actual_et*.*) huc$huc10_actual_et_annual_$proc_num.nc
 
 # need to reference the 'tar' files by PROCESS number (0-based index) not
 # by SIMULATION number (1-based index) so that Condor can *find* the  output files.
-tar cvf swb_output_$proc_num.tar "potential_recharge_annual_$sim_num.nc"
-tar cvf swb_logfiles_$proc_num.tar *LOGFILE*.md
-tar cvf swb_output_files_$proc_num.tar $(ls potential_recharge*.nc) $(ls tmin*.nc) $(ls tmax*.nc) $(ls *annual*.nc) *.asc *.csv
+tar --ignore-failed-read -cvf swb_logfiles_$proc_num.tar *LOGFILE*.md
+tar --ignore-failed-read -cvf swb_output_files_$proc_num.tar $(ls *potential_recharge*.nc) $(ls *tmin*.nc) $(ls *tmax*.nc) $(ls *annual*.nc) *.asc *.csv
 
 ls -l
