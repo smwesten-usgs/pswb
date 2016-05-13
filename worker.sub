@@ -1,0 +1,23 @@
+notification = Never
+universe = vanilla
+log = log/work_$(Cluster).log
+error = log/work_$(Cluster)_$(Process).err
+output = log/work_$(Cluster)_$(Process).out
+stream_output = True
+stream_error = True
+#requirements = OpSys == "LINUX" && Arch == "INTEL"
+
+arguments = "$(Process)"
+executable = worker.sh
+request_memory = 4G
+#request_disk = 75G
+request_cpus = 1
+rank = Mips
+
+should_transfer_files = yes
+when_to_transfer_output = ON_EXIT
+transfer_output_files = swb_output_files_$(Process).tar,swb_logfiles_$(Process).tar
+transfer_output_remaps = "swb_output_files_$(Process).tar = results/swb_output_files_$(Process).tar;swb_logfiles_$(Process).tar = results/swb_logfiles_$(Process).tar"
+transfer_input_files = swbfiles.tar
+queue 3
+ 
