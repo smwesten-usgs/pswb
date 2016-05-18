@@ -10,3 +10,6 @@ rm -f *.nc
 rm -f *.img
 rm -f log/*
 rm -f results/*
+rm -f *.png
+rm -f SWB_LOG*
+rm -f *.bin
