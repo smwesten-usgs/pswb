@@ -1,0 +1,6 @@
+#!/bin/sh
+condor_submit worker_genmod_unconfined_swb.sub
+condor_submit worker_genmod_confined_swb.sub
+condor_submit worker_genmod_uncertain_swb.sub
+condor_submit worker_genmod_initial_swb.sub
+condor_submit worker_genmod_IAMO_swb.sub

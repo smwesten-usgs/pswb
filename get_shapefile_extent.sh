@@ -12,6 +12,6 @@ fi
 
 BASENAME=$2
 
-EXTENT=$( /usr/bin/ogrinfo $1 $BASENAME | /usr/bin/grep "Extent" | /usr/bin/sed "s/Extent: //g" | /usr/bin/tr -d "[(,])\-" )
+EXTENT=$( /usr/bin/ogrinfo $1 $BASENAME | /usr/bin/grep "Extent" | /usr/bin/sed "s/Extent: //g;s/) - (/ /g" | /usr/bin/tr -d "[(,])" )
 
 echo -n $EXTENT

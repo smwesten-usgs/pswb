@@ -7,9 +7,6 @@ die() {
 
 [ "$#" -eq 4 ] || die "usage: $BASH_SOURCE [ huc8 # ] [ desired resolution ] [ start date ] [ end date ]"
 
-LOGFILE="gdal_operations_logfile_huc_$1.LOG"
-exec > $LOGFILE 2>&1
-
 #PATH=/home/nobody/NATIONAL_GEODATA/PSU_CONUS_SOILS
 IMGFILE=/home/nobody/NATIONAL_GEODATA/NLCD/nlcd_2011_landcover_2011_edition_2014_03_31.img
 FQ_SHPFILE=/home/nobody/NATIONAL_GEODATA/PSU_CONUS_SOILS/CONUS_SOILS_NAD83.shp
@@ -18,17 +15,22 @@ FQ_VRTFILE=/home/nobody/NATIONAL_GEODATA/HydroSheds/hydroshed_D8.vrt
 VRT_PROJ4="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 PROJ4="+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
 
-MASK_SHPFILE='/home/nobody/NATIONAL_GEODATA/WBD_National/WBDHU8_AEA_NAD83.shp'
+#MASK_SHPFILE='/home/nobody/NATIONAL_GEODATA/WBD_National/WBDHU8_AEA_NAD83.shp'
+MASK_SHPFILE='/home/nobody/NATIONAL_GEODATA/Reitz_BF_Separations/Reitz_BASEFLOW_stats.shp'
 
-SHPFILE=WBDHU8_AEA_NAD83.shp
-BASENAME=WBDHU8_AEA_NAD83
+#SHPFILE=WBDHU8_AEA_NAD83.shp
+#BASENAME=WBDHU8_AEA_NAD83
+
+SHPFILE=Reitz_BASEFLOW_stats.shp
+BASENAME=Reitz_BASEFLOW_stats
 
 POLYNAME=$1
 RES=$2
 START_DATE=$3
 END_DATE=$4
 
-FIELDNAME='HUC8'
+#FIELDNAME='HUC8'
+FIELDNAME='GAGE_ID'
 
 OUTPUT_NLCD_NAME="NLCD_2011_landcover_""$RES""m_huc8_""$POLYNAME.asc"
 OUTPUT_AWC_NAME="AWC_IN_FT_""$RES""m_huc8_""$POLYNAME.asc"
@@ -51,7 +53,6 @@ wait
 
 
 EXTENTS=$( ./get_shapefile_extent.sh "$LOCAL_SHP" "$LOCAL_BASENAME" )
-echo "Extents as returned from 'get_shapefile_extent.sh: $EXTENTS"
 
 /usr/bin/gdal_rasterize -a 'AWC100INFT' -te $EXTENTS -tr $RES $RES $FQ_SHPFILE $TEMPTIF1
 #/usr/bin/gdalwarp -r near -overwrite -dstnodata -9999. -te $EXTENTS -tr $RES $RES -cutline $MASK_SHPFILE -csql "SELECT * from $BASENAME WHERE HUC8="\'"$POLYNAME"\' -crop_to_cutline  tempfile.tif tempfile2.tif
@@ -79,6 +80,6 @@ NY=$(echo $NXNY | awk '{print $2}' )
 
 GRID_SPEC="GRID $NXNY $LLX $LLY $RES"
 
-./write_swbfile_1_0.sh "$OUTPUT_NLCD_NAME" "$OUTPUT_AWC_NAME" "$OUTPUT_SOILS_NAME" "$OUTPUT_D8_FLOWDIR_NAME" "$OUTPUT_SWB_CTL_NAME" "$LLX" "$LLY" "$NX" "$NY" "$RES" "$START_DATE" "$END_DATE"
+./write_swbfile_1_0.sh $OUTPUT_NLCD_NAME $OUTPUT_AWC_NAME $OUTPUT_SOILS_NAME $OUTPUT_D8_FLOWDIR_NAME $OUTPUT_SWB_CTL_NAME $LLX $LLY $NX $NY $RES $START_DATE $END_DATE
 
 echo "$OUTPUT_SWB_CTL_NAME"
