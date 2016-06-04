@@ -13,7 +13,8 @@ exec > $LOGFILE 2>&1
 #PATH=/home/nobody/NATIONAL_GEODATA/PSU_CONUS_SOILS
 IMGFILE=/home/nobody/NATIONAL_GEODATA/NLCD/nlcd_2011_landcover_2011_edition_2014_03_31.img
 FQ_SHPFILE=/home/nobody/NATIONAL_GEODATA/PSU_CONUS_SOILS/CONUS_SOILS_NAD83.shp
-FQ_SHPFILE2=/home/nobody/NATIONAL_GEODATA/Quaternary_Atlas/Merged_SM_and_QA.shp
+#FQ_SHPFILE2=/home/nobody/NATIONAL_GEODATA/Quaternary_Atlas/Merged_SM_and_QA.shp
+FQ_SHPFILE2=/home/nobody/NATIONAL_GEODATA/Quaternary_Atlas/NU_text_31MAY2016.shp
 FQ_VRTFILE=/home/nobody/NATIONAL_GEODATA/HydroSheds/hydroshed_D8.vrt
 VRT_PROJ4="+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs"
 PROJ4="+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs"
@@ -58,7 +59,7 @@ echo "Extents as returned from 'get_shapefile_extent.sh: $EXTENTS"
 /usr/bin/gdalwarp -r near -overwrite -dstnodata -9999. -te $EXTENTS -tr $RES $RES -csql "SELECT * from $BASENAME WHERE ""$FIELDNAME""="\'"$POLYNAME"\' "$TEMPTIF1" "$TEMPTIF2"
 /usr/bin/gdal_translate -ot Float32 -co "DECIMAL_PRECISION=2" -a_nodata -9999. -of AAIGrid $TEMPTIF2 $OUTPUT_AWC_NAME
 
-/usr/bin/gdal_rasterize -a 'SMW_class' -te $EXTENTS -tr $RES $RES $FQ_SHPFILE2 $TEMPTIF1
+/usr/bin/gdal_rasterize -a 'HSG_ID' -te $EXTENTS -tr $RES $RES $FQ_SHPFILE2 $TEMPTIF1
 /usr/bin/gdalwarp -r near -overwrite -dstnodata -9999. -tr $RES $RES -csql "SELECT * from $BASENAME WHERE ""$FIELDNAME""="\'"$POLYNAME"\' $TEMPTIF1 $TEMPTIF2
 /usr/bin/gdal_translate -ot Int32 -a_nodata -9999 -of AAIGrid $TEMPTIF2 $OUTPUT_SOILS_NAME
 

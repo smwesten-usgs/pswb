@@ -13,8 +13,12 @@ die() {
 
 sim_num=$(expr $1 + 1)
 proc_num="$1"
-#linenumber=$sim_num
-linenumber=$[$RANDOM % 229]
+
+linenumber=$sim_num
+
+# run every third GAGESII basin from Merediths collection
+#linenumber=$(expr $proc_num + $proc_num + $proc_num + 1)
+#linenumber=$[$RANDOM % 229]
 
 echo proc_num, sim_num, line_number: $proc_num, $sim_num, $linenumber
 
@@ -28,6 +32,7 @@ ls -l
 echo "Machine name: $(uname -n)"
 
 tar xvf swbfiles.tar
+#filename="PART_REFERENCE_LIST.txt"
 filename="GAGE_ID_list__GAGES_II.txt"
 numlines=$(wc -l $filename | cut -d ' ' -f1)
 
