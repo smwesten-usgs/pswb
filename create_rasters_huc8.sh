@@ -67,16 +67,15 @@ echo "Extents as returned from 'get_shapefile_extent.sh: $EXTENTS"
 /usr/bin/gdalwarp -r mode -overwrite -ot Int32 -of HFA -srcnodata 0 -dstnodata -9999 -te $EXTENTS -tr $RES $RES  -cutline $MASK_SHPFILE -csql "SELECT * from $BASENAME WHERE ""$FIELDNAME""="\'"$POLYNAME"\' -crop_to_cutline  "$IMGFILE" $TEMPIMG
 /usr/bin/gdal_translate -ot Int32 -a_nodata -9999 -of AAIGrid $TEMPIMG "$OUTPUT_NLCD_NAME" 
 
-/usr/bin/gdalwarp -ot Int32 -r near -s_srs "$VRT_PROJ4" -t_srs "$PROJ4" -te $EXTENTS -overwrite -csql "SELECT * from $BASENAME WHERE ""$FIELDNAME""="\'"$POLYNAME"\' $FQ_VRTFILE $TEMPTIF1
-/usr/bin/gdal_translate -ot Int32 -a_nodata -9 -tr $RES $RES -co "FORCE_CELLSIZE=TRUE" -of AAIGrid $TEMPTIF1 $OUTPUT_D8_FLOWDIR_NAME
-
-
 LLX=$( echo $EXTENTS | awk '{print $1}')
 LLY=$( echo $EXTENTS | awk '{print $2}')
 NXNY=$( ./get_grid_nx_ny.sh $OUTPUT_NLCD_NAME )
 
 NX=$(echo $NXNY | awk '{print $1}' )
 NY=$(echo $NXNY | awk '{print $2}' )
+
+/usr/bin/gdalwarp -ot Int32 -r near -s_srs "$VRT_PROJ4" -t_srs "$PROJ4" -te $EXTENTS -overwrite -csql "SELECT * from $BASENAME WHERE ""$FIELDNAME""="\'"$POLYNAME"\' $FQ_VRTFILE $TEMPTIF1
+/usr/bin/gdal_translate -ot Int32 -a_nodata -9 -outsize $NX $NY -co "FORCE_CELLSIZE=TRUE" -of AAIGrid $TEMPTIF1 $OUTPUT_D8_FLOWDIR_NAME
 
 GRID_SPEC="GRID $NXNY $LLX $LLY $RES"
 
