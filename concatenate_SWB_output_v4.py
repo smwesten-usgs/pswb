@@ -12,8 +12,10 @@ import numpy as np
 import numpy.ma as ma
 from shutil import copyfile
 
-mydir = '/run/media/smwesten/SCRATCH/SWB_RUN__07OCT2016/results'
-myworkdir = '/run/media/smwesten/SCRATCH/temp__07OCT2016'
+#mydir = '/run/media/smwesten/SCRATCH/SWB_RUN__13OCT2016/results'
+mydir = '/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/results'
+#myworkdir = '/run/media/smwesten/SCRATCH/temp__13OCT2016'
+myworkdir='/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/analyses'
 
 def write_raster(ncol, nrow, xll, yll, cellsize, nodata, data, filename ):
   rasterfile = open(filename, "w")
@@ -81,12 +83,12 @@ def read_raster(rasterfile):
 
 def extract_huc_id( namelist=[] ):
   """
-    Very brittle function...looks for the QUATERNARY_SOILS_GRP file and extracts the huc_id.
+    Very brittle function...looks for the AWC_IN_FT file and extracts the huc_id.
   """
   gage_id = 99999999
   filename = 'NA'
   for name in namelist:
-    if 'QUATERNARY' in name:
+    if 'AWC_IN_FT' in name:
       s = name.split('_')
       huc_id = s[-1].split('.')[0]
       filename = name.split('.')[0] + '.asc'
@@ -97,7 +99,9 @@ mytarfiles = []
 myrechargefiles = []
 myprecipfiles = []
 myinterceptionfiles = []
-
+myact_etfiles = []
+mytotal_act_etfiles = []
+myrunoff_outsidefiles = []
 huclist = []
 
 os.chdir( myworkdir )
@@ -124,23 +128,39 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
       pass
     found_files = False
 
+    firstpass_recharge = True
+    recharge_count = 0
+
     firstpass_precip = True
     precip_count = 0
     firstpass_interception = True
     interception_count = 0
+    firstpass_act_et = True
+    act_et_count = 0
+    firstpass_runoff_outside = True
+    runoff_outside_count = 0
 
     for filename in namelist:
       file_extension = filename.split('.')[1]
       file_basename = filename.split('.')[0]
       fname = newdirname + '/' + filename
 
-      if 'MEAN_RECHARGE' in filename:
+      if 'swb__RECHARGE' in filename and 'SUM' in filename:
 
+        recharge_count += 1
+        fname = newdirname + '/' + filename
         tfile.extract( member=tfile.getmember( filename ), path=newdirname )
-        myrechargefiles.append( fname )
-        found_files = True
-        huclist.append( huc_id )
-        copyfile( fname, myworkdir + '/' + file_basename + '_huc8_' + huc_id + '.asc' )
+        data, gt, proj, xy = read_raster( fname )
+
+        if firstpass_recharge:
+          found_files = True
+          huclist.append( huc_id )
+          recharge_data = ma.masked_where( data < 0.0, data )
+          firstpass_recharge = False
+          gt_recharge = gt
+          proj_recharge = proj
+        else:
+          recharge_data += ma.masked_where( data < 0.0, data )
 
       elif 'GROSS_PRECIP' in filename and 'SUM' in filename:
 
@@ -157,6 +177,21 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
         else:
           precip_data += ma.masked_where( data < 0.0, data )
 
+      elif 'RUNOFF_OUTSIDE' in filename and 'SUM' in filename:
+
+        runoff_outside_count += 1
+        fname = newdirname + '/' + filename
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        data, gt, proj, xy = read_raster( fname )
+
+        if firstpass_runoff_outside:
+          runoff_outside_data = ma.masked_where( data < 0.0, data )
+          firstpass_runoff_outside = False
+          gt_runoff_outside = gt
+          proj_runoff_outside = proj
+        else:
+          runoff_outside_data += ma.masked_where( data < 0.0, data )
+
       elif 'INTERCEPTION' in filename and 'SUM' in filename:
 
         interception_count += 1
@@ -171,6 +206,20 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
         else:
           interception_data += ma.masked_where( data < 0.0, data )
 
+      elif 'ACT_ET' in filename and 'SUM' in filename:
+
+        act_et_count += 1
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        data, gt, proj, xy = read_raster( fname )
+
+        if firstpass_act_et:
+          act_et_data = ma.masked_where( data < 0.0, data )
+          firstpass_act_et = False
+          gt_act_et = gt
+          proj_act_et = proj
+        else:
+          act_et_data += ma.masked_where( data < 0.0, data )
+
       elif file_extension in ['asc','shx','dbf','prj','qpj','ctl']:
         tfile.extract( member=tfile.getmember( filename ), path=newdirname )
 
@@ -180,6 +229,27 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
       elif file_extension == 'shp':
         tfile.extract( member=tfile.getmember( filename ), path=newdirname )
         myshapefile = newdirname + '/' + filename
+
+
+
+
+    if recharge_count > 0:
+      recharge_data /= recharge_count
+      recharge_filename=myworkdir + '/swb_mean_potential_recharge_'+ str(huc_id) + '.asc'
+      nrow = recharge_data.shape[0]
+      ncol = recharge_data.shape[1]
+      cellsize = gt_recharge[1]
+      write_raster(ncol=ncol,
+                  nrow=nrow,
+                  xll=gt_recharge[0],
+                  yll=gt_recharge[3] - nrow * cellsize,
+                  cellsize=cellsize,
+                  nodata=-9999.,
+                  data=recharge_data,
+                  filename=recharge_filename )
+      myrechargefiles.append( recharge_filename )
+
+
 
     if precip_count > 0:
       precip_data /= precip_count
@@ -198,6 +268,23 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
                   filename=precip_filename )
       myprecipfiles.append( precip_filename )
 
+    if runoff_outside_count > 0:
+      runoff_outside_data /= runoff_outside_count
+      #os.chdir( myworkdir )
+      runoff_outside_filename=myworkdir + '/swb_mean_runoff_outside_'+ str(huc_id) + '.asc'
+      nrow = runoff_outside_data.shape[0]
+      ncol = runoff_outside_data.shape[1]
+      cellsize = gt_runoff_outside[1]
+      write_raster(ncol=ncol,
+                  nrow=nrow,
+                  xll=gt_runoff_outside[0],
+                  yll=gt_runoff_outside[3] - nrow * cellsize,
+                  cellsize=cellsize,
+                  nodata=-9999.,
+                  data=runoff_outside_data,
+                  filename=runoff_outside_filename )
+      myrunoff_outsidefiles.append( runoff_outside_filename )
+
     if interception_count > 0:
       interception_data /= interception_count
       #os.chdir( myworkdir )
@@ -214,6 +301,38 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
                   data=interception_data,
                   filename=interception_filename )
       myinterceptionfiles.append( interception_filename )
+
+    if act_et_count > 0:
+      act_et_data /= act_et_count
+      #os.chdir( myworkdir )
+      act_et_filename=myworkdir + '/swb_mean_act_et_'+ str(huc_id) + '.asc'
+      nrow = act_et_data.shape[0]
+      ncol = act_et_data.shape[1]
+      cellsize = gt_act_et[1]
+      write_raster(ncol=ncol,
+                  nrow=nrow,
+                  xll=gt_act_et[0],
+                  yll=gt_act_et[3] - nrow * cellsize,
+                  cellsize=cellsize,
+                  nodata=-9999.,
+                  data=act_et_data,
+                  filename=act_et_filename )
+      myact_etfiles.append( act_et_filename )
+
+      if act_et_count > 0 and interception_count > 0:
+        total_act_et_filename=myworkdir + '/swb_mean_act_et_plus_interception'+ str(huc_id) + '.asc'
+        nrow = act_et_data.shape[0]
+        ncol = act_et_data.shape[1]
+        cellsize = gt_act_et[1]
+        write_raster(ncol=ncol,
+                    nrow=nrow,
+                    xll=gt_act_et[0],
+                    yll=gt_act_et[3] - nrow * cellsize,
+                    cellsize=cellsize,
+                    nodata=-9999.,
+                    data=( act_et_data + interception_data ),
+                    filename=total_act_et_filename )
+        mytotal_act_etfiles.append( total_act_et_filename )
 
 
 filelist = open( 'huc_list_recharge_vrt.txt', 'w')
@@ -236,4 +355,25 @@ filelist = open( 'huc_list_interception_vrt.txt', 'w')
 filelist.close()
 
 command_args = ['-input_file_list','huc_list_interception_vrt.txt','concatenated_swb_interception.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_act_et_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in myact_etfiles]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_act_et_vrt.txt','concatenated_swb_act_et.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_total_act_et_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in mytotal_act_etfiles ]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_total_act_et_vrt.txt','concatenated_swb_total_act_et.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_runoff_outside.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in myrunoff_outsidefiles ]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_runoff_outside_vrt.txt','concatenated_swb_runoff_outside.vrt']
 rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
