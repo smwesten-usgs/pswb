@@ -13,9 +13,12 @@ import numpy.ma as ma
 from shutil import copyfile
 
 #mydir = '/run/media/smwesten/SCRATCH/SWB_RUN__13OCT2016/results'
-mydir = '/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/results'
+#mydir = '/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/results'
+mydir = '/home/smwesten/Project_Data/Fox_Wolf_Peshtigo_no_irrigation/results'
 #myworkdir = '/run/media/smwesten/SCRATCH/temp__13OCT2016'
-myworkdir='/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/analyses'
+#myworkdir='/home/smwesten/Project_Data/Fox_Wolf_Peshtigo/analyses'
+myworkdir='/home/smwesten/Project_Data/Fox_Wolf_Peshtigo_no_irrigation/analyses'
+MASK_SHPFILE='/home/nobody/Project_Data/Fox_Wolf_Peshtigo/input/FWPvert_domain_UTMft.shp'
 
 def write_raster(ncol, nrow, xll, yll, cellsize, nodata, data, filename ):
   rasterfile = open(filename, "w")
@@ -102,6 +105,9 @@ myinterceptionfiles = []
 myact_etfiles = []
 mytotal_act_etfiles = []
 myrunoff_outsidefiles = []
+mynlcdfiles  = []
+myawcfiles = []
+myhsgfiles = []
 huclist = []
 
 os.chdir( myworkdir )
@@ -119,7 +125,7 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
     namelist = tfile.getnames()
     huc_id, quaternary_file = extract_huc_id( namelist )
     print ( 'Examining tarfile {0}. HUC ID={1}.'.format( file, huc_id ) )
-    newdirname = myworkdir +'/huc8_' + huc_id
+    newdirname = myworkdir +'/huc10_' + huc_id
     quaternary_gridfile = newdirname + '/' + quaternary_file
     try:
       os.makedirs( newdirname )
@@ -205,6 +211,30 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
           proj_interception = proj
         else:
           interception_data += ma.masked_where( data < 0.0, data )
+
+      elif 'NLCD_2011' in filename:
+
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        if 'asc' in filename:
+          nlcd_filename=myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc'
+          mynlcdfiles.append( nlcd_filename )
+          copyfile( fname, myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc' )
+
+      elif 'AWC_IN_FT' in filename:
+
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        if 'asc' in filename:
+          awc_filename=myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc'
+          myawcfiles.append( awc_filename )
+          copyfile( fname, myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc' )
+
+      elif 'HYDROLOGIC_SOILS' in filename:
+
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        if 'asc' in filename:
+          hsg_filename=myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc'
+          myhsgfiles.append( hsg_filename )
+          copyfile( fname, myworkdir + '/' + file_basename + '_huc10_' + str(huc_id) + '.asc' )
 
       elif 'ACT_ET' in filename and 'SUM' in filename:
 
@@ -376,4 +406,25 @@ filelist = open( 'huc_list_runoff_outside.txt', 'w')
 filelist.close()
 
 command_args = ['-input_file_list','huc_list_runoff_outside_vrt.txt','concatenated_swb_runoff_outside.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_nlcd_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in mynlcdfiles]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_nlcd_vrt.txt','concatenated_swb_landuse.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_awc_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in myawcfiles]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_awc_vrt.txt','concatenated_swb_available_water_content_in_ft.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+filelist = open( 'huc_list_hsg_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in myhsgfiles]
+filelist.close()
+
+command_args = ['-input_file_list','huc_list_hsg_vrt.txt','concatenated_swb_hydrologic_soils_groups.vrt']
 rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )

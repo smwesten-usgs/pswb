@@ -96,12 +96,14 @@ def extract_huc_id( namelist=[] ):
 
 
 mytarfiles = []
+myquaternaryfiles = []
 myrechargefiles = []
 myprecipfiles = []
 myinterceptionfiles = []
 myact_etfiles = []
 mytotal_act_etfiles = []
 myrunoff_outsidefiles = []
+mynlcdfiles = []
 huclist = []
 
 os.chdir( myworkdir )
@@ -208,6 +210,22 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
         else:
           act_et_data += ma.masked_where( data < 0.0, data )
 
+      elif 'QUATERNARY_SOIL' in filename:
+
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        if 'asc' in filename:
+          quaternary_filename=myworkdir + '/' + file_basename + '_huc8_' + str(huc_id) + '.asc'
+          myquaternaryfiles.append( quaternary_filename )
+          copyfile( fname, myworkdir + '/' + file_basename + '_huc8_' + str(huc_id) + '.asc' )
+
+      elif 'NLCD_2011' in filename:
+
+        tfile.extract( member=tfile.getmember( filename ), path=newdirname )
+        if 'asc' in filename:
+          nlcd_filename=myworkdir + '/' + file_basename + '_huc8_' + str(huc_id) + '.asc'
+          mynlcdfiles.append( filename )
+          copyfile( fname, myworkdir + '/' + file_basename + '_huc8_' + str(huc_id) + '.asc' )
+
       elif file_extension in ['asc','shx','dbf','prj','qpj','ctl']:
         tfile.extract( member=tfile.getmember( filename ), path=newdirname )
 
@@ -287,7 +305,7 @@ for file in glob.glob(mydir + '/*output_files*.tar'):
       myact_etfiles.append( act_et_filename )
 
       if act_et_count > 0 and interception_count > 0:
-        total_act_et_filename=myworkdir + '/swb_mean_act_et_plus_interception'+ str(huc_id) + '.asc'
+        total_act_et_filename=myworkdir + '/swb_mean_act_et_plus_interception_'+ str(huc_id) + '.asc'
         nrow = act_et_data.shape[0]
         ncol = act_et_data.shape[1]
         cellsize = gt_act_et[1]
@@ -321,6 +339,14 @@ filelist = open( 'huc_list_interception_vrt.txt', 'w')
 [filelist.write( filename + '\n' ) for filename in myinterceptionfiles]
 filelist.close()
 
+filelist = open( 'huc_list_quaternary_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in myquaternaryfiles]
+filelist.close()
+
+filelist = open( 'huc_list_nlcd_vrt.txt', 'w')
+[filelist.write( filename + '\n' ) for filename in mynlcdfiles]
+filelist.close()
+
 command_args = ['-input_file_list','huc_list_interception_vrt.txt','concatenated_swb_interception.vrt']
 rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
 
@@ -331,6 +357,12 @@ filelist.close()
 command_args = ['-input_file_list','huc_list_act_et_vrt.txt','concatenated_swb_act_et.vrt']
 rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
 
+command_args = ['-input_file_list','huc_list_quaternary_vrt.txt','concatenated_swb_quaternary.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
+command_args = ['-input_file_list','huc_list_nlcd_vrt.txt','concatenated_swb_landuse.vrt']
+rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
+
 filelist = open( 'huc_list_total_act_et_vrt.txt', 'w')
 [filelist.write( filename + '\n' ) for filename in mytotal_act_etfiles ]
 filelist.close()
@@ -338,7 +370,7 @@ filelist.close()
 command_args = ['-input_file_list','huc_list_total_act_et_vrt.txt','concatenated_swb_total_act_et.vrt']
 rc.run_cmd( command_text='gdalbuildvrt', command_arguments=command_args )
 
-filelist = open( 'huc_list_runoff_outside.txt', 'w')
+filelist = open( 'huc_list_runoff_outside_vrt.txt', 'w')
 [filelist.write( filename + '\n' ) for filename in myrunoff_outsidefiles ]
 filelist.close()
 
